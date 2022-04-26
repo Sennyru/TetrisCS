@@ -13,18 +13,20 @@ namespace TetrisCS
         readonly int[,] positionOfCurrentBlock = new int[HEIGHT, WIDTH];
         readonly System.Timers.Timer gravityTimer = new();
 
+        bool isPlaying;
         float gravity = 150;
         Block currentBlock;
 
 
         public int[,] Map => map;
+        public bool Playing => isPlaying;
         public Block CurrentBlock => currentBlock;
 
 
         /// <summary> 테트리스를 시작한다. </summary>
         public void Play()
         {
-            Console.CursorVisible = false;
+            isPlaying = true;
 
             gravityTimer.Interval = gravity;
             gravityTimer.Elapsed += new ElapsedEventHandler(FallElapsed);
@@ -58,6 +60,11 @@ namespace TetrisCS
                 }
             }
             
+            if (currentBlock.pos.y <= 0)
+            {
+                GameOver();
+            }
+
             Block block = new(new Vector(WIDTH / 2, 0), BlockType.T);
             block.pos.x -= block.Width / 2;
 
@@ -108,7 +115,8 @@ namespace TetrisCS
         }
 
         /// <summary> 블록을 pos만큼 옮긴다. </summary>
-        void MoveBlockTo(Vector dir)
+        /// <returns> 옮길 수 없어서 다음 블록이 생겼다면 false를 리턴한다. 그 외에는 true를 리턴한다. </returns>
+        bool MoveBlockTo(Vector dir)
         {
             // 옮길 수 있는 경우
             if (CanMove(ref currentBlock, currentBlock.pos + dir))
@@ -146,9 +154,66 @@ namespace TetrisCS
             else if (dir == Vector.Down)
             {
                 currentBlock = SpawnNewBlock();
+                return false;
             }
+
+            return true;
         }
 
+        void Rotate(Vector dir)
+        {
+
+        }
+
+        /// <summary> 게임이 끝났을 때 호출 </summary>
+        void GameOver()
+        {
+            isPlaying = false;
+            gravityTimer.Close();
+        }
+
+
+        /// <summary> 오른쪽 키 누르기 </summary>
+        public void InputRight()
+        {
+            MoveBlockTo(Vector.Right);
+        }
+
+        /// <summary> 왼쪽 키 누르기 </summary>
+        public void InputLeft()
+        {
+            MoveBlockTo(Vector.Left);
+        }
+
+        /// <summary> 블록 한 칸 아래로 떨어뜨리기 </summary>
+        public void SoftDrop()
+        {
+            MoveBlockTo(Vector.Down);
+        }
+
+        /// <summary> 블록을 바닥에 한 번에 떨어뜨리기 </summary>
+        public void HardDrop()
+        {
+            while (MoveBlockTo(Vector.Down));
+        }
+
+        /// <summary> 블록을 오른쪽으로 90도 회전시키기 </summary>
+        public void RotateRight()
+        {
+
+        }
+
+        /// <summary> 블록을 왼쪽으로 90도 회전시키기 </summary>
+        public void RotateLeft()
+        {
+
+        }
+
+        /// <summary> 블록을 180도 회전시키기 (뒤집기) </summary>
+        public void Rotate180()
+        {
+
+        }
 
         /// <summary> 현재 맵을 사각형 문자(■, □)들로 변환한다. </summary>
         public string GetStringMap()
