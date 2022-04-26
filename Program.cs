@@ -1,56 +1,20 @@
 ﻿using TetrisCS;
 
-namespace Program
+class Program
 {
-    public class Program
+    static void Main()
     {
-        static Tetris tetris = new();
+        Tetris tetris = new();
+        tetris.Play();
+        Console.CursorVisible = false;
 
-
-        static void Main()
+        while (true)
         {
-            tetris.GravityTick = 500;
-            tetris.Play();
+            Console.SetCursorPosition(0, 0);
+            Console.Write(tetris.GetStringMap());
 
-            Thread inputThread = new(GetKeyDown);
-            inputThread.Start();
-
-            while (true)
-            {
-                tetris.DrawMapOnConsoleScreen();
-
-                // debug
-                Console.SetCursorPosition(Tetris.ScreenHeight + 2, 1);
-                Console.Write(tetris.CurrentPiece.pos + "  ");
-            }
-        }
-
-        static void GetKeyDown()
-        {
-            while (true)
-            {
-                var key = Console.ReadKey();
-
-                switch (key.Key)
-                {
-                    case ConsoleKey.RightArrow or ConsoleKey.D:
-
-                        break;
-
-                    case ConsoleKey.LeftArrow or ConsoleKey.A:
-
-                        break;
-
-                    case ConsoleKey.DownArrow or ConsoleKey.S:
-                        tetris.SoftDrop();
-                        break;
-
-                    case ConsoleKey.Spacebar:
-                        tetris.HardDrop();
-                        break;
-
-                }
-            }
+            Console.SetCursorPosition(Tetris.WIDTH * 2 + 2, 1);
+            Console.Write(tetris.CurrentBlock.pos);
         }
     }
 }
