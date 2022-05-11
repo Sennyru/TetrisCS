@@ -1,17 +1,17 @@
 ﻿namespace TetrisCS
 {
     /// <summary> 테트리스 블록 하나 </summary>
-    public struct Block
+    public class Block
     {
         public Vector pos;
-        public BlockType type;
-        public int[,] shape;
+
+        BlockType type;
+        int[,] shape;
 
         public Block(Vector pos, BlockType type)
         {
             this.pos = pos;
             this.type = type;
-
 
             shape = type switch
             {
@@ -61,8 +61,14 @@
             };
         }
 
+        public int[,] Shape => shape;
         public int Width => shape.GetLength(1);
         public int Height => shape.GetLength(0);
+
+        public int[,] Rotate()
+        {
+            throw new NotImplementedException();
+        }
 
         public int this[int y, int x] => shape[y, x];
 

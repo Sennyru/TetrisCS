@@ -46,7 +46,7 @@ namespace TetrisCS
         /// <summary> 가방(BlockType[] bag)을 새로 채운다. </summary>
         void FillBag()
         {
-            Array.Copy(blockTypes, bag);
+            bag = blockTypes.OrderBy(item => random.Next()).ToList();
         }
 
         /// <summary> gravity 시간마다 호출되는 함수 <br/>
@@ -60,7 +60,7 @@ namespace TetrisCS
         /// <returns> 생성된 블록 </returns>
         Block SpawnNewBlock()
         {
-            Block block = new(new Vector(WIDTH / 2, 0), blockTypes[random.Next(0, blockTypes.Length)]);
+            Block block = new(new Vector(WIDTH / 2, 0), GetNextBlock());
             block.pos.x -= block.Width / 2;
 
             // map에 블록 집어넣기
@@ -78,7 +78,18 @@ namespace TetrisCS
 
             return block;
         }
-        
+
+        /// <summary> bag에서 다음 블록을 뽑아온다. </summary>
+        BlockType GetNextBlock()
+        {
+            if (bag.Count == 0)
+                FillBag();
+
+            var type = bag[0];
+            bag.RemoveAt(0);
+            return type;
+        }
+
         /// <summary> 블록을 pos 위치에 놓을 수 있는지 검사한다. </summary>
         bool CanMove(ref Block block, Vector pos)
         {
@@ -165,7 +176,7 @@ namespace TetrisCS
         void Place()
         {
             // currentBlock 초기화
-            if (currentBlock.shape != null)
+            if (currentBlock.Shape != null)
             {
                 for (int y = 0; y < currentBlock.Height; y++)
                 {
@@ -260,7 +271,7 @@ namespace TetrisCS
 
         }
 
-        /// <summary> 현재 맵을 사각형 문자(■, □)들로 변환한다. </summary>
+        /// <summary> 현재 맵을 사각형 문자(■, □)들로 변환한다. <br/> 콘솔 전용. </summary>
         public string GetStringMap()
         {
             StringBuilder sb = new();
