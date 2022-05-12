@@ -91,7 +91,7 @@ namespace TetrisCS
         }
 
         /// <summary> 블록을 pos 위치에 놓을 수 있는지 검사한다. </summary>
-        bool CanMove(ref Block block, Vector pos)
+        bool CanMove(Block block, Vector pos)
         {
             for (int y = 0; y < block.Height; y++)
             {
@@ -125,7 +125,7 @@ namespace TetrisCS
         bool MoveBlockTo(Vector dir)
         {
             // 옮길 수 있는 경우
-            if (CanMove(ref currentBlock, currentBlock.pos + dir))
+            if (CanMove(currentBlock, currentBlock.pos + dir))
             {
                 // 맵에서 블록 지우기
                 for (int y = 0; y < currentBlock.Height; y++)
