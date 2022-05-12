@@ -64,10 +64,22 @@
         public int[,] Shape => shape;
         public int Width => shape.GetLength(1);
         public int Height => shape.GetLength(0);
-
-        public int[,] Rotate()
+        
+        /// <summary> 자신을 오른쪽(시계방향)으로 90도 회전시킨 조각을 리턴한다. </summary>
+        public int[,] Rotate(bool isClockwise)
         {
-            throw new NotImplementedException();
+            var rotatedArr = new int[shape.Height, shape.Width];
+            for (int i = 0; i < shape.Height; i++)
+            {
+                for (int j = 0; j < shape.Width; j++)
+                {
+                    if (isClockwise)
+                        rotatedArr[j, shape.Width-1 - i] = shape[i, j];
+                    else
+                        rotatedArr[j, shape.Width-1 - i] = shape[i, j]; // 여기 두줄위에 코드 복붙한 거니까 이거 왼쪽 돌리기로 수정하셈
+                }
+            }
+            return rotatedArr;
         }
 
         public int this[int y, int x] => shape[y, x];
