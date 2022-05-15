@@ -4,16 +4,14 @@
     public class Block
     {
         public Vector pos;
-
-        BlockType type;
+        readonly BlockType type;
         int[,] shape;
 
-        public Block(Vector pos, BlockType type)
+        public Block(Vector pos, BlockType type, int[,]? shape = null)
         {
             this.pos = pos;
             this.type = type;
-
-            shape = type switch
+            this.shape = shape ?? type switch
             {
                 BlockType.I => new int[,]
                 {
@@ -60,30 +58,37 @@
                 _ => throw new UnknownBlockException()
             };
         }
-
-        public int[,] Shape => shape;
+        
+        public int[,] Shape { get => shape; set => shape = value; }
         public int Width => shape.GetLength(1);
         public int Height => shape.GetLength(0);
-        
-        /// <summary> 자신을 오른쪽(시계방향)으로 90도 회전시킨 조각을 리턴한다. </summary>
-        public int[,] Rotate(bool isClockwise)
+
+        /// <summary> 자신을 오른쪽 또는 왼쪽으로 회전시킨 조각을 리턴한다. </summary>
+        /// <param name="isClockwise"> <b>true</b> - 오른쪽으로 90도 회전 <br/>
+        /// <b>false</b> - 왼쪽으로 90도 회전 <br/>
+        /// <b>null</b> - 180도 회전 </param>
+        public int[,] Rotate(bool? isClockwise)
         {
-            var rotatedArr = new int[shape.Height, shape.Width];
-            for (int i = 0; i < shape.Height; i++)
+            var rotatedArr = new int[Height, Width];
+            for (int i = 0; i < Height; i++)
             {
-                for (int j = 0; j < shape.Width; j++)
+                for (int j = 0; j < Width; j++)
                 {
-                    if (isClockwise)
-                        rotatedArr[j, shape.Width-1 - i] = shape[i, j];
-                    else
-                        rotatedArr[j, shape.Width-1 - i] = shape[i, j]; // 여기 두줄위에 코드 복붙한 거니까 이거 왼쪽 돌리기로 수정하셈
+                    switch (isClockwise)
+                    {
+                        case true: rotatedArr[j, Width-1 - i] = shape[i, j]; break; // 오른쪽으로 90도 
+                        case false: rotatedArr[Height-1 - j, i] = shape[i, j]; break; // 왼쪽으로 90도
+                        case null: rotatedArr[Height-1 - i, Width-1 - j] = shape[i, j]; break; // 180도
+                    }
                 }
             }
             return rotatedArr;
         }
+        
+        public Block Copy() => new Block(pos, type, shape);
 
         public int this[int y, int x] => shape[y, x];
-
-        class UnknownBlockException : Exception { }
     }
+
+    class UnknownBlockException : Exception { }
 }

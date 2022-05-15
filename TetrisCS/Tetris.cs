@@ -5,8 +5,11 @@ namespace TetrisCS
 {
     public class Tetris
     {
+        #region Constants
         public const int WIDTH = 10, HEIGHT = 20;
-
+        #endregion
+        
+        #region Private Fields
         /// <summary> 테트리스 맵 </summary>
         readonly int[,] map = new int[HEIGHT, WIDTH];
         /// <summary> currentBlock이 있는 위치 </summary>
@@ -17,19 +20,22 @@ namespace TetrisCS
         readonly System.Timers.Timer gravityTimer = new();
         readonly Random random = new();
 
-        float gravity = 150;
+        float gravity = 500;
         Block currentBlock;
         /// <summary> 7Bag, 여기에서 다음 블록을 하나씩 뽑는다 </summary>
         List<BlockType> bag = new();
 
         bool playing;
-
-
+        #endregion
+        
+        #region Properties
         public int[,] Map => map;
         public bool Playing => playing;
         public Block CurrentBlock => currentBlock;
-
-
+        #endregion
+        
+        
+        #region Private Methods
         /// <summary> 테트리스를 시작한다. </summary>
         public void Play()
         {
@@ -90,12 +96,12 @@ namespace TetrisCS
             return type;
         }
 
-        /// <summary> 블록을 pos 위치에 놓을 수 있는지 검사한다. </summary>
-        bool CanMove(Block block, Vector pos)
+        /// <summary> 블록(을 pos 위치에 놓을 수 있는지 검사한다. </summary>
+        bool CanMove(int[,] block, Vector pos)
         {
-            for (int y = 0; y < block.Height; y++)
+            for (int y = 0; y < block.GetLength(0); y++)
             {
-                for (int x = 0; x < block.Width; x++)
+                for (int x = 0; x < block.GetLength(1); x++)
                 {
                     if (block[y, x] == 1)
                     {
@@ -125,7 +131,7 @@ namespace TetrisCS
         bool MoveBlockTo(Vector dir)
         {
             // 옮길 수 있는 경우
-            if (CanMove(currentBlock, currentBlock.pos + dir))
+            if (CanMove(currentBlock.Shape, currentBlock.pos + dir))
             {
                 // 맵에서 블록 지우기
                 for (int y = 0; y < currentBlock.Height; y++)
@@ -166,10 +172,45 @@ namespace TetrisCS
             return true;
         }
 
-        /// <summary> 현재 블록을 회전시킨다. </summary>
-        void Rotate(Vector dir)
+        /// <summary> 현재 블록이 회전 가능한지 체크하고, 가능하다면 회전시킨다. </summary>
+        /// <param name="isClockwise"> <b>true</b> - 오른쪽으로 90도 회전 <br/>
+        /// <b>false</b> - 왼쪽으로 90도 회전 <br/>
+        /// <b>null</b> - 180도 회전 </param>
+        void Rotate(bool? isClockwise)
         {
-            throw new NotImplementedException();
+            var rotated = currentBlock.Rotate(isClockwise);
+
+            // 회전이 가능하면
+            if (CanMove(rotated, CurrentBlock.pos))
+            {
+                // 맵에서 블록 지우기
+                for (int y = 0; y < currentBlock.Height; y++)
+                {
+                    for (int x = 0; x < currentBlock.Width; x++)
+                    {
+                        if (currentBlock[y, x] == 1)
+                        {
+                            map[currentBlock.pos.y + y, currentBlock.pos.x + x] = 0;
+                            positionOfCurrentBlock[currentBlock.pos.y + y, currentBlock.pos.x + x] = 0;
+                        }
+                    }
+                }
+
+                currentBlock.Shape = rotated;
+
+                // 새 위치에 블록 넣기
+                for (int y = 0; y < currentBlock.Height; y++)
+                {
+                    for (int x = 0; x < currentBlock.Width; x++)
+                    {
+                        if (currentBlock[y, x] == 1)
+                        {
+                            map[currentBlock.pos.y + y, currentBlock.pos.x + x] = 1;
+                            positionOfCurrentBlock[currentBlock.pos.y + y, currentBlock.pos.x + x] = 1;
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary> 블록이 땅에 안착했을 때 실행된다. 다음 블록을 생성한다. </summary>
@@ -192,7 +233,7 @@ namespace TetrisCS
 
             // 라인 클리어
             int lineClearCount = 0;
-            for (int y = 0; y < HEIGHT; y++)
+            for (int y = HEIGHT-1; y >= lineClearCount; y--)
             {
                 for (int x = 0; x < WIDTH; x++)
                 {
@@ -202,19 +243,17 @@ namespace TetrisCS
                     }
                 }
 
-                // 라인 한 칸씩 내리기
-                lineClearCount++;
-                for (int y2 = y; y > 0; y2--)
+                for (int y2 = y; y2 > 0; y2--)
                 {
                     for (int x = 0; x < WIDTH; x++)
                     {
                         map[y2, x] = map[y2-1, x];
                     }
                 }
-                y--;
+                lineClearCount++;
+                y++;
 
-                NextLine:
-                continue;
+                NextLine: { }
             }
 
             // 다음 블록 생성
@@ -227,8 +266,9 @@ namespace TetrisCS
             playing = false;
             gravityTimer.Close();
         }
-
-
+        #endregion
+        
+        #region Public Inputs
         /// <summary> 오른쪽 키 누르기 </summary>
         public void InputRight()
         {
@@ -256,21 +296,23 @@ namespace TetrisCS
         /// <summary> 블록을 오른쪽으로 90도 회전시키기 </summary>
         public void RotateRight()
         {
-
+            Rotate(isClockwise: true);
         }
 
         /// <summary> 블록을 왼쪽으로 90도 회전시키기 </summary>
         public void RotateLeft()
         {
-
+            Rotate(isClockwise: false);
         }
 
         /// <summary> 블록을 180도 회전시키기 (뒤집기) </summary>
         public void Rotate180()
         {
-
+            Rotate(isClockwise: null);
         }
-
+        #endregion
+        
+        #region Utility Functions
         /// <summary> 현재 맵을 사각형 문자(■, □)들로 변환한다. <br/> 콘솔 전용. </summary>
         public string GetStringMap()
         {
@@ -294,5 +336,7 @@ namespace TetrisCS
 
             return sb.ToString();
         }
+        #endregion
+        
     }
 }
