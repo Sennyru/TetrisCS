@@ -11,54 +11,58 @@
         {
             this.pos = pos;
             this.type = type;
-            this.shape = shape ?? type switch
+            this.shape = shape ?? BlockTypeToIntArray(type);
+        }
+
+        public static int[,] BlockTypeToIntArray(BlockType type) => type switch
+        {
+            BlockType.I => new int[,]
             {
-                BlockType.I => new int[,]
-                {
                     { 0, 0, 0, 0 },
                     { 1, 1, 1, 1 },
                     { 0, 0, 0, 0 },
                     { 0, 0, 0, 0 },
-                },
-                BlockType.J => new int[,]
-                {
+            },
+            BlockType.J => new int[,]
+            {
                     { 1, 0, 0 },
                     { 1, 1, 1 },
                     { 0, 0, 0 },
-                },
-                BlockType.L => new int[,]
-                {
+            },
+            BlockType.L => new int[,]
+            {
                     { 0, 0, 1 },
                     { 1, 1, 1 },
                     { 0, 0, 0 },
-                },
-                BlockType.O => new int[,]
-                {
+            },
+            BlockType.O => new int[,]
+            {
                     { 1, 1 },
                     { 1, 1 },
-                },
-                BlockType.S => new int[,]
-                {
+            },
+            BlockType.S => new int[,]
+            {
                     { 0, 1, 1 },
                     { 1, 1, 0 },
                     { 0, 0, 0 },
-                },
-                BlockType.T => new int[,]
-                {
+            },
+            BlockType.T => new int[,]
+            {
                     { 0, 1, 0 },
                     { 1, 1, 1 },
                     { 0, 0, 0 },
-                },
-                BlockType.Z => new int[,]
-                {
+            },
+            BlockType.Z => new int[,]
+            {
                     { 1, 1, 0 },
                     { 0, 1, 1 },
                     { 0, 0, 0 },
-                },
-                _ => throw new UnknownBlockException()
-            };
-        }
-        
+            },
+            BlockType.None => new int[0, 0],
+            _ => throw new UnknownBlockException()
+        };
+
+        public BlockType Type => type;
         public int[,] Shape { get => shape; set => shape = value; }
         public int Width => shape.GetLength(1);
         public int Height => shape.GetLength(0);

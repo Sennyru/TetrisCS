@@ -1,4 +1,4 @@
-﻿using System.Text;
+﻿
 using System.Timers;
 
 namespace TetrisCS
@@ -24,19 +24,25 @@ namespace TetrisCS
         Block currentBlock;
         /// <summary> 7Bag, 여기에서 다음 블록을 하나씩 뽑는다 </summary>
         List<BlockType> bag = new();
+        BlockType holdingBlock = BlockType.None;
+        int b2bCombo;
 
         bool playing;
         #endregion
         
-        #region Events
-        event TetrisEventHandler? tetrisEvent = null;
-        #endregion
 
         #region Properties
         public int[,] Map => map;
         public bool Playing => playing;
         public Block CurrentBlock => currentBlock;
-        public event TetrisEventHandler TetrisEvent { add => tetrisEvent += value; remove => tetrisEvent -= value; }
+        public int[,] PositionOfCurrentBlock => positionOfCurrentBlock;
+        public BlockType HoldingBlock => holdingBlock;
+        #endregion
+
+        #region Events
+        public event MapUpdateEventHandler? MapUpdateEvent;
+        public event LineClearEventHandler? LineClearEvent;
+        public event HoldEventHandler? HoldEvent;
         #endregion
 
 
@@ -48,7 +54,7 @@ namespace TetrisCS
             gravityTimer.Elapsed += new ElapsedEventHandler(FallElapsed);
 
             FillBag();
-            currentBlock = SpawnNewBlock();
+            currentBlock = SpawnNewBlock(GetNextBlock());
             gravityTimer.Start();
 
             playing = true;
@@ -69,9 +75,9 @@ namespace TetrisCS
 
         /// <summary> 새로운 블록을 생성하고, 그것을 map에 넣는다. </summary>
         /// <returns> 생성된 블록 </returns>
-        Block SpawnNewBlock()
+        Block SpawnNewBlock(BlockType type)
         {
-            Block block = new(new Vector(WIDTH / 2, 0), GetNextBlock());
+            Block block = new(new Vector(WIDTH / 2, 0), type);
             block.pos.x -= block.Width / 2;
 
             // map에 블록 집어넣기
@@ -87,7 +93,7 @@ namespace TetrisCS
                 }
             }
 
-            tetrisEvent?.Invoke(TetrisEventType.MapUpdated);
+            MapUpdateEvent?.Invoke();
 
             return block;
         }
@@ -134,8 +140,10 @@ namespace TetrisCS
         }
 
         /// <summary> 블록을 pos만큼 옮긴다. </summary>
+        /// <param name="dir"> 옮기는 방향 (Right/Left/Down) </param>
+        /// <param name="hardDrop"> 하드 드롭 여부 </param>
         /// <returns> 옮길 수 없어서 다음 블록이 생겼다면 false를 리턴한다. 그 외에는 true를 리턴한다. </returns>
-        bool MoveBlockTo(Vector dir)
+        bool MoveBlockTo(Vector dir, bool hardDrop = false)
         {
             // 옮길 수 있는 경우
             if (CanMove(currentBlock.Shape, currentBlock.pos + dir))
@@ -168,17 +176,19 @@ namespace TetrisCS
 
                 currentBlock.pos += dir;
 
-                tetrisEvent?.Invoke(TetrisEventType.MapUpdated);
+                if (!hardDrop) MapUpdateEvent?.Invoke();
+
+                return true;
             }
             
             // 옮길 수 없는 경우 기본적으로 무시되나, 아래쪽으로 이동할 수 없는 경우는 블록이 땅에 닿았다는 뜻
             else if (dir == Vector.Down)
             {
                 Place();
-                return false;
+                if (hardDrop) MapUpdateEvent?.Invoke();
             }
 
-            return true;
+            return false;
         }
 
         /// <summary> 현재 블록이 회전 가능한지 체크하고, 가능하다면 회전시킨다. </summary>
@@ -220,7 +230,7 @@ namespace TetrisCS
                     }
                 }
 
-                tetrisEvent?.Invoke(TetrisEventType.MapUpdated);
+                MapUpdateEvent?.Invoke();
             }
         }
 
@@ -228,16 +238,13 @@ namespace TetrisCS
         void Place()
         {
             // currentBlock 초기화
-            if (currentBlock.Shape != null)
+            for (int y = 0; y < currentBlock.Height; y++)
             {
-                for (int y = 0; y < currentBlock.Height; y++)
+                for (int x = 0; x < currentBlock.Width; x++)
                 {
-                    for (int x = 0; x < currentBlock.Width; x++)
+                    if (currentBlock[y, x] == 1)
                     {
-                        if (currentBlock[y, x] == 1)
-                        {
-                            positionOfCurrentBlock[currentBlock.pos.y + y, currentBlock.pos.x + x] = 0;
-                        }
+                        positionOfCurrentBlock[currentBlock.pos.y + y, currentBlock.pos.x + x] = 0;
                     }
                 }
             }
@@ -266,11 +273,46 @@ namespace TetrisCS
 
                 NextLine: { }
             }
+            b2bCombo = lineClearCount >= 4 ? b2bCombo + 1 : 0;
 
-            // 다음 블록 생성
-            currentBlock = SpawnNewBlock();
+            // 게임 오버 판정
+            if (lineClearCount == 0 && currentBlock.pos.y == 0)
+            {
+                GameOver();
+            }
+            else
+            {
+                // 다음 블록 생성
+                currentBlock = SpawnNewBlock(GetNextBlock());
+            }
 
-            tetrisEvent?.Invoke(TetrisEventType.MapUpdated);
+            MapUpdateEvent?.Invoke();
+            if (lineClearCount > 0) LineClearEvent?.Invoke(lineClearCount, b2bCombo);
+        }
+
+        /// <summary> 홀드 전환 </summary>
+        void Holding()
+        {
+            var temp = holdingBlock;
+            holdingBlock = currentBlock.Type;
+
+            // 맵에서 블록 지우기
+            for (int y = 0; y < currentBlock.Height; y++)
+            {
+                for (int x = 0; x < currentBlock.Width; x++)
+                {
+                    if (currentBlock[y, x] == 1)
+                    {
+                        map[currentBlock.pos.y + y, currentBlock.pos.x + x] = 0;
+                        positionOfCurrentBlock[currentBlock.pos.y + y, currentBlock.pos.x + x] = 0;
+                    }
+                }
+            }
+
+            currentBlock = SpawnNewBlock(temp == BlockType.None ? GetNextBlock() : temp);
+
+            HoldEvent?.Invoke();
+            MapUpdateEvent?.Invoke();
         }
 
         /// <summary> 게임이 끝났을 때 호출 </summary>
@@ -303,7 +345,7 @@ namespace TetrisCS
         /// <summary> 블록을 바닥에 한 번에 떨어뜨리기 </summary>
         public void HardDrop()
         {
-            while (MoveBlockTo(Vector.Down));
+            while (MoveBlockTo(Vector.Down, true));
         }
 
         /// <summary> 블록을 오른쪽으로 90도 회전시키기 </summary>
@@ -323,31 +365,11 @@ namespace TetrisCS
         {
             Rotate(isClockwise: null);
         }
-        #endregion
-        
-        #region Utility Functions
-        /// <summary> 현재 맵을 사각형 문자(■, □)들로 변환한다. <br/> 콘솔 전용. </summary>
-        public string GetStringMap()
+
+        /// <summary> 홀드 </summary>
+        public void Hold()
         {
-            StringBuilder sb = new();
-
-            for (int i = 0; i < HEIGHT; i++)
-            {
-                for (int j = 0; j < WIDTH; j++)
-                {
-                    if (positionOfCurrentBlock[i, j] == 1)
-                    {
-                        sb.Append('▣');
-                    }
-                    else
-                    {
-                        sb.Append(map[i, j] >= 1 ? '■' : '□');
-                    }
-                }
-                sb.AppendLine();
-            }
-
-            return sb.ToString();
+            Holding();
         }
         #endregion
         
