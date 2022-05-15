@@ -28,13 +28,18 @@ namespace TetrisCS
         bool playing;
         #endregion
         
+        #region Events
+        event TetrisEventHandler? tetrisEvent = null;
+        #endregion
+
         #region Properties
         public int[,] Map => map;
         public bool Playing => playing;
         public Block CurrentBlock => currentBlock;
+        public event TetrisEventHandler TetrisEvent { add => tetrisEvent += value; remove => tetrisEvent -= value; }
         #endregion
-        
-        
+
+
         #region Private Methods
         /// <summary> 테트리스를 시작한다. </summary>
         public void Play()
@@ -81,6 +86,8 @@ namespace TetrisCS
                     }
                 }
             }
+
+            tetrisEvent?.Invoke(TetrisEventType.MapUpdated);
 
             return block;
         }
@@ -160,6 +167,8 @@ namespace TetrisCS
                 }
 
                 currentBlock.pos += dir;
+
+                tetrisEvent?.Invoke(TetrisEventType.MapUpdated);
             }
             
             // 옮길 수 없는 경우 기본적으로 무시되나, 아래쪽으로 이동할 수 없는 경우는 블록이 땅에 닿았다는 뜻
@@ -210,6 +219,8 @@ namespace TetrisCS
                         }
                     }
                 }
+
+                tetrisEvent?.Invoke(TetrisEventType.MapUpdated);
             }
         }
 
@@ -258,6 +269,8 @@ namespace TetrisCS
 
             // 다음 블록 생성
             currentBlock = SpawnNewBlock();
+
+            tetrisEvent?.Invoke(TetrisEventType.MapUpdated);
         }
 
         /// <summary> 게임이 끝났을 때 호출 </summary>

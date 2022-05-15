@@ -6,19 +6,24 @@ class Program
 
     static void Main()
     {
-        tetris.Play();
         Console.CursorVisible = false;
+
+        tetris.TetrisEvent += new TetrisEventHandler(TetrisEventGetter);
+        tetris.Play();
 
         Thread inputThread = new(InputThread);
         inputThread.Start();
+    }
 
-        while (true)
+    /// <summary> TetrisEvent 처리 함수 </summary>
+    static void TetrisEventGetter(TetrisEventType eventType)
+    {
+        switch (eventType)
         {
-            Console.SetCursorPosition(0, 0);
-            Console.Write(tetris.GetStringMap());
-
-            Console.SetCursorPosition(Tetris.WIDTH * 2 + 2, 1);
-            Console.Write(tetris.CurrentBlock.pos + "  ");
+            case TetrisEventType.MapUpdated:
+                Console.SetCursorPosition(0, 0);
+                Console.Write(tetris.GetStringMap());
+                break;
         }
     }
 
