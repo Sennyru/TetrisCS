@@ -6,23 +6,28 @@ namespace TetrisCS
     public class Tetris
     {
         #region Constants
-        public const int WIDTH = 10, HEIGHT = 20;
+        public const int Width = 10, Height = 20;
         #endregion
         
         #region Private Fields
         /// <summary> 테트리스 맵 </summary>
-        readonly int[,] map = new int[HEIGHT, WIDTH];
+        readonly int[,] map = new int[Height, Width];
         /// <summary> currentBlock이 있는 위치 </summary>
-        readonly int[,] positionOfCurrentBlock = new int[HEIGHT, WIDTH];
+        readonly int[,] positionOfCurrentBlock = new int[Height, Width];
         /// <summary> 게임에서 생성될 수 있는 블록의 종류 </summary>
         readonly BlockType[] blockTypes = { BlockType.I, BlockType.J, BlockType.L, BlockType.O, BlockType.S, BlockType.T, BlockType.Z };
 
         readonly System.Timers.Timer gravityTimer = new();
         readonly Random random = new();
 
+        /// <summary> FallElapsed 호출 간격 (ms) </summary>
         float gravity = 500;
+        /// <summary> nextBag의 크기 </summary>
+        int bagSize = 4;
         Block currentBlock;
-        /// <summary> 7Bag, 여기에서 다음 블록을 하나씩 뽑는다 </summary>
+        /// <summary> 7Bag </summary>
+        List<BlockType> nextBag = new();
+        /// <summary> 다음에 나올 블록 목록 큐 </summary>
         List<BlockType> bag = new();
         BlockType holdingBlock = BlockType.None;
         int b2bCombo;
@@ -37,12 +42,15 @@ namespace TetrisCS
         public Block CurrentBlock => currentBlock;
         public int[,] PositionOfCurrentBlock => positionOfCurrentBlock;
         public BlockType HoldingBlock => holdingBlock;
+        public List<BlockType> Bag => bag;
+        public int BagSize { get => bagSize; set => bagSize = value; }
         #endregion
 
         #region Events
         public event MapUpdateEventHandler? MapUpdateEvent;
         public event LineClearEventHandler? LineClearEvent;
         public event HoldEventHandler? HoldEvent;
+        public event PlaceEventHandler? PlaceEvent;
         #endregion
 
 
@@ -53,17 +61,30 @@ namespace TetrisCS
             gravityTimer.Interval = gravity;
             gravityTimer.Elapsed += new ElapsedEventHandler(FallElapsed);
 
-            FillBag();
+            for (int i = 0; i < bagSize; i++)
+                InsertBag();
             currentBlock = SpawnNewBlock(GetNextBlock());
             gravityTimer.Start();
 
             playing = true;
+
+            PlaceEvent?.Invoke();
         }
 
-        /// <summary> 가방(BlockType[] bag)을 새로 채운다. </summary>
-        void FillBag()
+        /// <summary> nextBag에서 하나를 뽑아서 bag에 넣는다. </summary>
+        void InsertBag()
         {
-            bag = blockTypes.OrderBy(item => random.Next()).ToList();
+            if (nextBag.Count == 0)
+                RefillNextBag();
+
+            bag.Add(nextBag[0]);
+            nextBag.RemoveAt(0);
+        }
+
+        /// <summary> nextBag을 새로 채운다. </summary>
+        void RefillNextBag()
+        {
+            nextBag = blockTypes.OrderBy(_ => random.Next()).ToList();
         }
 
         /// <summary> gravity 시간마다 호출되는 함수 <br/>
@@ -77,7 +98,7 @@ namespace TetrisCS
         /// <returns> 생성된 블록 </returns>
         Block SpawnNewBlock(BlockType type)
         {
-            Block block = new(new Vector(WIDTH / 2, 0), type);
+            Block block = new(new Vector(Width / 2, 0), type);
             block.pos.x -= block.Width / 2;
 
             // map에 블록 집어넣기
@@ -94,19 +115,19 @@ namespace TetrisCS
             }
 
             MapUpdateEvent?.Invoke();
+            gravityTimer.Stop();
+            gravityTimer.Start();
 
             return block;
         }
 
-        /// <summary> bag에서 다음 블록을 뽑아온다. </summary>
+        /// <summary> bag에서 다음 블록을 뽑아오고 bag을 하나 채운다. </summary>
         BlockType GetNextBlock()
         {
-            if (bag.Count == 0)
-                FillBag();
-
-            var type = bag[0];
+            var next = bag[0];
             bag.RemoveAt(0);
-            return type;
+            InsertBag();
+            return next;
         }
 
         /// <summary> 블록(을 pos 위치에 놓을 수 있는지 검사한다. </summary>
@@ -122,7 +143,7 @@ namespace TetrisCS
                         int nY = pos.y + y;
 
                         // 벽에 닿았다면(칸 위치가 배열을 넘어섰다면) 옮길 수 없다
-                        if (0 > nY || nY >= HEIGHT || 0 > nX || nX >= WIDTH)
+                        if (0 > nY || nY >= Height || 0 > nX || nX >= Width)
                         {
                             return false;
                         }
@@ -251,9 +272,9 @@ namespace TetrisCS
 
             // 라인 클리어
             int lineClearCount = 0;
-            for (int y = HEIGHT-1; y >= lineClearCount; y--)
+            for (int y = Height-1; y >= lineClearCount; y--)
             {
-                for (int x = 0; x < WIDTH; x++)
+                for (int x = 0; x < Width; x++)
                 {
                     if (map[y, x] == 0)
                     {
@@ -263,7 +284,7 @@ namespace TetrisCS
 
                 for (int y2 = y; y2 > 0; y2--)
                 {
-                    for (int x = 0; x < WIDTH; x++)
+                    for (int x = 0; x < Width; x++)
                     {
                         map[y2, x] = map[y2-1, x];
                     }
@@ -287,6 +308,7 @@ namespace TetrisCS
             }
 
             MapUpdateEvent?.Invoke();
+            PlaceEvent?.Invoke();
             if (lineClearCount > 0) LineClearEvent?.Invoke(lineClearCount, b2bCombo);
         }
 

@@ -4,7 +4,7 @@ using TetrisCS;
 class Program
 {
     static readonly Tetris tetris = new();
-    static readonly Vector offset = new Vector(10, 0);
+    static readonly Vector offset = new Vector(50, 0);
 
     static EventQueue eventQueue;
     static int lineClearCount;
@@ -14,7 +14,8 @@ class Program
     {
         Map = 1 << 0,
         LineClear = 1 << 1,
-        Holding = 1 << 2,
+        Hold = 1 << 2,
+        Place = 1 << 3,
     }
 
 
@@ -24,7 +25,8 @@ class Program
 
         tetris.MapUpdateEvent += new MapUpdateEventHandler(MapEnque);
         tetris.LineClearEvent += new LineClearEventHandler(LineClearEnque);
-        tetris.HoldEvent += new HoldEventHandler(HoldingEnque);
+        tetris.HoldEvent += new HoldEventHandler(HoldEnque);
+        tetris.PlaceEvent += new PlaceEventHandler(PlaceEnque);
         tetris.Play();
 
         Thread inputThread = new(InputThread);
@@ -35,6 +37,7 @@ class Program
             DrawMap();
             ShowLineClearText();
             ShowHoldingBlock();
+            ShowNextBlocks();
         }
     }
 
@@ -54,9 +57,15 @@ class Program
     }
 
     /// <summary> HoldEventHandler </summary>
-    static void HoldingEnque()
+    static void HoldEnque()
     {
-        eventQueue |= EventQueue.Holding;
+        eventQueue |= EventQueue.Hold;
+    }
+
+    /// <summary> PlaceEventHandler </summary>
+    static void PlaceEnque()
+    {
+        eventQueue |= EventQueue.Place;
     }
     #endregion
 
@@ -66,10 +75,10 @@ class Program
     {
         if (eventQueue.HasFlag(EventQueue.Map))
         {
-            for (int i = 0; i < Tetris.HEIGHT; i++)
+            for (int i = 0; i < Tetris.Height; i++)
             {
                 Console.SetCursorPosition(offset.x, offset.y + i);
-                for (int j = 0; j < Tetris.WIDTH; j++)
+                for (int j = 0; j < Tetris.Width; j++)
                 {
                     if (tetris.PositionOfCurrentBlock[i, j] == 1)
                     {
@@ -81,16 +90,17 @@ class Program
                     }
                 }
             }
+
             eventQueue &= ~EventQueue.Map;
         }
     }
 
-    /// <summary> 라인 수에 따라 Tetris 등의 텍스트를 옆에 띄운다. (LineClearEventHandler) </summary>
+    /// <summary> 라인 수에 따라 Tetris 등의 텍스트를 옆에 띄운다. </summary>
     static void ShowLineClearText()
     {
         if (eventQueue.HasFlag(EventQueue.LineClear))
         {
-            Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 8);
+            Console.SetCursorPosition(offset.x - 8, offset.y + Block.MaximumSquareSize + 1);
             Console.Write(lineClearCount switch
             {
                 1 => "Single",
@@ -99,39 +109,63 @@ class Program
                 4 => "Tetris",
                 _ => ""
             });
-            if (b2bCombo > 0)
+            if (b2bCombo > 1)
             {
-                Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 9);
+                Console.SetCursorPosition(offset.x - 8, offset.y + Block.MaximumSquareSize + 1 + 1);
                 Console.Write($"{b2bCombo} Combo");
             }
 
-            Thread.Sleep(1000);
-            Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 8);
+            Thread.Sleep(500);
+            Console.SetCursorPosition(offset.x - 8, offset.y + Block.MaximumSquareSize + 1);
             Console.Write("      ");
-            Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 9);
+            Console.SetCursorPosition(offset.x - 8, offset.y + Block.MaximumSquareSize + 1 + 1);
             Console.Write("        ");
 
             eventQueue &= ~EventQueue.LineClear;
         }
     }
 
-    /// <summary> 홀드 칸에 있는 조각을 보여준다. (HoldEventHandler) </summary>
+    /// <summary> 홀드 칸에 있는 조각을 보여준다. </summary>
     static void ShowHoldingBlock()
     {
-        if (eventQueue.HasFlag(EventQueue.Holding))
+        if (eventQueue.HasFlag(EventQueue.Hold))
         {
             if (tetris.HoldingBlock is not BlockType.None)
             {
                 var holding = Block.BlockTypeToIntArray(tetris.HoldingBlock);
                 for (int i = 0; i < holding.GetLength(0); i++)
                 {
-                    Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 1 + i);
+                    Console.SetCursorPosition(offset.x - (Block.MaximumSquareSize*2 + 2), offset.y + 1 + i);
                     for (int j = 0; j < holding.GetLength(1); j++)
                     {
                         Console.Write(holding[i, j] == 1 ? "■" : "　");
                     }
                 }
             }
+
+            eventQueue &= ~EventQueue.Hold;
+        }
+    }
+
+    /// <summary> 다음에 나올 블록 리스트를 보여준다. </summary>
+    static void ShowNextBlocks()
+    {
+        if (eventQueue.HasFlag(EventQueue.Place))
+        {
+            for (int order = 0; order < tetris.BagSize; order++)
+            {
+                var block = Block.BlockTypeToIntArray(tetris.Bag[order]);
+                for (int i = 0; i < Block.MaximumSquareSize; i++)
+                {
+                    Console.SetCursorPosition(offset.x + Tetris.Width*2 + 2, offset.y + order*Block.MaximumSquareSize + 2 + i);
+                    for (int j = 0; j < Block.MaximumSquareSize; j++)
+                    {
+                        Console.Write((i < block.GetLength(0) && j < block.GetLength(1) && block[i, j] == 1) ? "■" : "　");
+                    }
+                }
+            }
+
+            eventQueue &= ~EventQueue.Place;
         }
     }
     #endregion

@@ -18,49 +18,52 @@
         {
             BlockType.I => new int[,]
             {
-                    { 0, 0, 0, 0 },
-                    { 1, 1, 1, 1 },
-                    { 0, 0, 0, 0 },
-                    { 0, 0, 0, 0 },
+                { 0, 0, 0, 0 },
+                { 1, 1, 1, 1 },
+                { 0, 0, 0, 0 },
+                { 0, 0, 0, 0 },
             },
             BlockType.J => new int[,]
             {
-                    { 1, 0, 0 },
-                    { 1, 1, 1 },
-                    { 0, 0, 0 },
+                { 1, 0, 0 },
+                { 1, 1, 1 },
+                { 0, 0, 0 },
             },
             BlockType.L => new int[,]
             {
-                    { 0, 0, 1 },
-                    { 1, 1, 1 },
-                    { 0, 0, 0 },
+                { 0, 0, 1 },
+                { 1, 1, 1 },
+                { 0, 0, 0 },
             },
             BlockType.O => new int[,]
             {
-                    { 1, 1 },
-                    { 1, 1 },
+                { 1, 1 },
+                { 1, 1 },
             },
             BlockType.S => new int[,]
             {
-                    { 0, 1, 1 },
-                    { 1, 1, 0 },
-                    { 0, 0, 0 },
+                { 0, 1, 1 },
+                { 1, 1, 0 },
+                { 0, 0, 0 },
             },
             BlockType.T => new int[,]
             {
-                    { 0, 1, 0 },
-                    { 1, 1, 1 },
-                    { 0, 0, 0 },
+                { 0, 1, 0 },
+                { 1, 1, 1 },
+                { 0, 0, 0 },
             },
             BlockType.Z => new int[,]
             {
-                    { 1, 1, 0 },
-                    { 0, 1, 1 },
-                    { 0, 0, 0 },
+                { 1, 1, 0 },
+                { 0, 1, 1 },
+                { 0, 0, 0 },
             },
             BlockType.None => new int[0, 0],
             _ => throw new UnknownBlockException()
         };
+
+        /// <summary> 가장 큰 조각의 가로세로 길이 </summary>
+        public const int MaximumSquareSize = 4;
 
         public BlockType Type => type;
         public int[,] Shape { get => shape; set => shape = value; }
