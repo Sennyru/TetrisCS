@@ -4,84 +4,137 @@ using TetrisCS;
 class Program
 {
     static readonly Tetris tetris = new();
-
     static readonly Vector offset = new Vector(10, 0);
+
+    static EventQueue eventQueue;
+    static int lineClearCount;
+    static int b2bCombo;
+
+    [Flags] enum EventQueue
+    {
+        Map = 1 << 0,
+        LineClear = 1 << 1,
+        Holding = 1 << 2,
+    }
 
 
     static void Main()
     {
         Console.CursorVisible = false;
 
-        tetris.MapUpdateEvent += new MapUpdateEventHandler(DrawMap);
-        tetris.LineClearEvent += new LineClearEventHandler(LineClearText);
-        tetris.HoldEvent += new HoldEventHandler(ShowHoldingBlock);
+        tetris.MapUpdateEvent += new MapUpdateEventHandler(MapEnque);
+        tetris.LineClearEvent += new LineClearEventHandler(LineClearEnque);
+        tetris.HoldEvent += new HoldEventHandler(HoldingEnque);
         tetris.Play();
 
         Thread inputThread = new(InputThread);
         inputThread.Start();
+
+        while (true)
+        {
+            DrawMap();
+            ShowLineClearText();
+            ShowHoldingBlock();
+        }
     }
 
-    /// <summary> 테트리스 맵을 새로 그린다. (MapUpdateEventHandler) </summary>
+    #region Event Handlers
+    /// <summary> MapUpdateEventHandler </summary>
+    static void MapEnque()
+    {
+        eventQueue |= EventQueue.Map;
+    }
+
+    /// <summary> LineClearEventHandler </summary>
+    static void LineClearEnque(int lineClearCount, int b2bCombo)
+    {
+        eventQueue |= EventQueue.LineClear;
+        Program.lineClearCount = lineClearCount;
+        Program.b2bCombo = b2bCombo;
+    }
+
+    /// <summary> HoldEventHandler </summary>
+    static void HoldingEnque()
+    {
+        eventQueue |= EventQueue.Holding;
+    }
+    #endregion
+
+    #region Tetris
+    /// <summary> 테트리스 맵을 새로 그린다. </summary>
     static void DrawMap()
     {
-        for (int i = 0; i < Tetris.HEIGHT; i++)
+        if (eventQueue.HasFlag(EventQueue.Map))
         {
-            Console.SetCursorPosition(offset.x, offset.y + i);
-            for (int j = 0; j < Tetris.WIDTH; j++)
+            for (int i = 0; i < Tetris.HEIGHT; i++)
             {
-                if (tetris.PositionOfCurrentBlock[i, j] == 1)
+                Console.SetCursorPosition(offset.x, offset.y + i);
+                for (int j = 0; j < Tetris.WIDTH; j++)
                 {
-                    Console.Write("▣");
-                }
-                else
-                {
-                    Console.Write(tetris.Map[i, j] >= 1 ? "■" : "□");
+                    if (tetris.PositionOfCurrentBlock[i, j] == 1)
+                    {
+                        Console.Write("▣");
+                    }
+                    else
+                    {
+                        Console.Write(tetris.Map[i, j] >= 1 ? "■" : "□");
+                    }
                 }
             }
+            eventQueue &= ~EventQueue.Map;
         }
     }
 
-    /// <summary> 라인 수에 따라 Tetris 등의 텍스트가 옆에 뜬다. (LineClearEventHandler) </summary>
-    static void LineClearText(int lineClearCount, int b2bCombo)
+    /// <summary> 라인 수에 따라 Tetris 등의 텍스트를 옆에 띄운다. (LineClearEventHandler) </summary>
+    static void ShowLineClearText()
     {
-        Console.SetCursorPosition(offset.x + Tetris.WIDTH*2 + 2, offset.y + 8);
-        Console.Write(lineClearCount switch
+        if (eventQueue.HasFlag(EventQueue.LineClear))
         {
-            1 => "Single",
-            2 => "Double",
-            3 => "Triple",
-            4 => "Tetris",
-            _ => ""
-        });
-        if (b2bCombo > 0)
-        {
-            Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 9);
-            Console.Write($"{b2bCombo} Combo");
-        }
+            Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 8);
+            Console.Write(lineClearCount switch
+            {
+                1 => "Single",
+                2 => "Double",
+                3 => "Triple",
+                4 => "Tetris",
+                _ => ""
+            });
+            if (b2bCombo > 0)
+            {
+                Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 9);
+                Console.Write($"{b2bCombo} Combo");
+            }
 
-        Thread.Sleep(1000);
-        Console.SetCursorPosition(offset.x + Tetris.WIDTH*2 + 2, offset.y + 8);
-        Console.Write("      ");
-        Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 9);
-        Console.Write("        ");
+            Thread.Sleep(1000);
+            Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 8);
+            Console.Write("      ");
+            Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 9);
+            Console.Write("        ");
+
+            eventQueue &= ~EventQueue.LineClear;
+        }
     }
 
     /// <summary> 홀드 칸에 있는 조각을 보여준다. (HoldEventHandler) </summary>
     static void ShowHoldingBlock()
     {
-        if (tetris.HoldingBlock is not BlockType.None)
+        if (eventQueue.HasFlag(EventQueue.Holding))
         {
-            var holding = Block.BlockTypeToIntArray(tetris.HoldingBlock);
-            for (int i = 0; i < holding.GetLength(0); i++)
+            if (tetris.HoldingBlock is not BlockType.None)
             {
-                Console.SetCursorPosition(offset.x + Tetris.WIDTH*2 + 2, offset.y + 1 + i);
-                for (int j = 0; j < holding.GetLength(1); j++)
+                var holding = Block.BlockTypeToIntArray(tetris.HoldingBlock);
+                for (int i = 0; i < holding.GetLength(0); i++)
                 {
-                    Console.Write(holding[i, j] == 1 ? "■" : "　");
+                    Console.SetCursorPosition(offset.x + Tetris.WIDTH * 2 + 2, offset.y + 1 + i);
+                    for (int j = 0; j < holding.GetLength(1); j++)
+                    {
+                        Console.Write(holding[i, j] == 1 ? "■" : "　");
+                    }
                 }
             }
         }
     }
+    #endregion
 
     /// <summary> 키 입력을 받는 스레드 </summary>
     static void InputThread()
