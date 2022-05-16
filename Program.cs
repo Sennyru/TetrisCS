@@ -1,5 +1,4 @@
-﻿using System.Text;
-using TetrisCS;
+﻿using TetrisCS;
 
 class Program
 {
