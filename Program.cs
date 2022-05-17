@@ -22,10 +22,10 @@ class Program
     {
         Console.CursorVisible = false;
 
-        tetris.MapUpdateEvent += new MapUpdateEventHandler(MapEnque);
-        tetris.LineClearEvent += new LineClearEventHandler(LineClearEnque);
-        tetris.HoldEvent += new HoldEventHandler(HoldEnque);
-        tetris.PlaceEvent += new PlaceEventHandler(PlaceEnque);
+        tetris.MapUpdateEvent += new TetrisEventHandler(MapEnque);
+        tetris.LineClearEvent += new TetrisEventHandler(LineClearEnque);
+        tetris.HoldEvent += new TetrisEventHandler(HoldEnque);
+        tetris.PlaceEvent += new TetrisEventHandler(PlaceEnque);
         tetris.Play();
 
         Thread inputThread = new(InputThread);
@@ -40,35 +40,32 @@ class Program
         }
     }
 
-    #region Event Handlers
-    /// <summary> MapUpdateEventHandler </summary>
-    static void MapEnque()
+    /// <summary> TetrisEventHandler </summary>
+    static void MapEnque(TetrisEventArgs? e)
     {
         eventQueue |= EventQueue.Map;
     }
 
-    /// <summary> LineClearEventHandler </summary>
-    static void LineClearEnque(int lineClearCount, int b2bCombo)
+    /// <summary> TetrisEventHandler </summary>
+    static void LineClearEnque(TetrisEventArgs? e)
     {
         eventQueue |= EventQueue.LineClear;
-        Program.lineClearCount = lineClearCount;
-        Program.b2bCombo = b2bCombo;
+        lineClearCount = e?.lineClearCount ?? 0;
+        b2bCombo = e?.b2bCombo ?? 0;
     }
 
-    /// <summary> HoldEventHandler </summary>
-    static void HoldEnque()
+    /// <summary> TetrisEventHandler </summary>
+    static void HoldEnque(TetrisEventArgs? e)
     {
         eventQueue |= EventQueue.Hold;
     }
 
-    /// <summary> PlaceEventHandler </summary>
-    static void PlaceEnque()
+    /// <summary> TetrisEventHandler </summary>
+    static void PlaceEnque(TetrisEventArgs? e)
     {
         eventQueue |= EventQueue.Place;
     }
-    #endregion
 
-    #region Tetris
     /// <summary> 테트리스 맵을 새로 그린다. </summary>
     static void DrawMap()
     {
@@ -167,7 +164,6 @@ class Program
             eventQueue &= ~EventQueue.Place;
         }
     }
-    #endregion
 
     /// <summary> 키 입력을 받는 스레드 </summary>
     static void InputThread()

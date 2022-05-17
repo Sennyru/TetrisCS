@@ -5,11 +5,8 @@ namespace TetrisCS
 {
     public class Tetris
     {
-        #region Constants
         public const int Width = 10, Height = 20;
-        #endregion
         
-        #region Private Fields
         /// <summary> 테트리스 맵 </summary>
         readonly int[,] map = new int[Height, Width];
         /// <summary> currentBlock이 있는 위치 </summary>
@@ -28,15 +25,13 @@ namespace TetrisCS
         /// <summary> 7Bag </summary>
         List<BlockType> nextBag = new();
         /// <summary> 다음에 나올 블록 목록 큐 </summary>
-        List<BlockType> bag = new();
+        readonly List<BlockType> bag = new();
         BlockType holdingBlock = BlockType.None;
         int b2bCombo;
 
         bool playing;
-        #endregion
         
 
-        #region Properties
         public int[,] Map => map;
         public bool Playing => playing;
         public Block CurrentBlock => currentBlock;
@@ -44,17 +39,10 @@ namespace TetrisCS
         public BlockType HoldingBlock => holdingBlock;
         public List<BlockType> Bag => bag;
         public int BagSize { get => bagSize; set => bagSize = value; }
-        #endregion
 
-        #region Events
-        public event MapUpdateEventHandler? MapUpdateEvent;
-        public event LineClearEventHandler? LineClearEvent;
-        public event HoldEventHandler? HoldEvent;
-        public event PlaceEventHandler? PlaceEvent;
-        #endregion
+        public event TetrisEventHandler? MapUpdateEvent, LineClearEvent, HoldEvent, PlaceEvent;
 
 
-        #region Private Methods
         /// <summary> 테트리스를 시작한다. </summary>
         public void Play()
         {
@@ -68,7 +56,7 @@ namespace TetrisCS
 
             playing = true;
 
-            PlaceEvent?.Invoke();
+            PlaceEvent?.Invoke(null);
         }
 
         /// <summary> nextBag에서 하나를 뽑아서 bag에 넣는다. </summary>
@@ -114,7 +102,7 @@ namespace TetrisCS
                 }
             }
 
-            MapUpdateEvent?.Invoke();
+            MapUpdateEvent?.Invoke(null);
             gravityTimer.Stop();
             gravityTimer.Start();
 
@@ -197,7 +185,7 @@ namespace TetrisCS
 
                 currentBlock.pos += dir;
 
-                if (!hardDrop) MapUpdateEvent?.Invoke();
+                if (!hardDrop) MapUpdateEvent?.Invoke(null);
 
                 return true;
             }
@@ -206,7 +194,7 @@ namespace TetrisCS
             else if (dir == Vector.Down)
             {
                 Place();
-                if (hardDrop) MapUpdateEvent?.Invoke();
+                if (hardDrop) MapUpdateEvent?.Invoke(null);
             }
 
             return false;
@@ -251,7 +239,7 @@ namespace TetrisCS
                     }
                 }
 
-                MapUpdateEvent?.Invoke();
+                MapUpdateEvent?.Invoke(null);
             }
         }
 
@@ -307,9 +295,10 @@ namespace TetrisCS
                 currentBlock = SpawnNewBlock(GetNextBlock());
             }
 
-            MapUpdateEvent?.Invoke();
-            PlaceEvent?.Invoke();
-            if (lineClearCount > 0) LineClearEvent?.Invoke(lineClearCount, b2bCombo);
+            MapUpdateEvent?.Invoke(null);
+            PlaceEvent?.Invoke(null);
+            if (lineClearCount > 0)
+                LineClearEvent?.Invoke(new TetrisEventArgs { lineClearCount = lineClearCount, b2bCombo = b2bCombo });
         }
 
         /// <summary> 홀드 전환 </summary>
@@ -333,8 +322,8 @@ namespace TetrisCS
 
             currentBlock = SpawnNewBlock(temp == BlockType.None ? GetNextBlock() : temp);
 
-            HoldEvent?.Invoke();
-            MapUpdateEvent?.Invoke();
+            HoldEvent?.Invoke(null);
+            MapUpdateEvent?.Invoke(null);
         }
 
         /// <summary> 게임이 끝났을 때 호출 </summary>
@@ -343,9 +332,7 @@ namespace TetrisCS
             playing = false;
             gravityTimer.Close();
         }
-        #endregion
         
-        #region Public Inputs
         /// <summary> 오른쪽 키 누르기 </summary>
         public void InputRight()
         {
@@ -393,7 +380,5 @@ namespace TetrisCS
         {
             Holding();
         }
-        #endregion
-        
     }
 }
