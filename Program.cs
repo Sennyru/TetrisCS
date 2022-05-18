@@ -1,4 +1,5 @@
 ﻿using TetrisCS;
+using System.Threading.Tasks;
 
 class Program
 {
@@ -111,7 +112,7 @@ class Program
                 Console.Write($"{b2bCombo} Combo");
             }
 
-            Thread.Sleep(500);
+            Task.Delay(500);
             Console.SetCursorPosition(offset.x - 8, offset.y + Block.MaximumSquareSize + 1);
             Console.Write("      ");
             Console.SetCursorPosition(offset.x - 8, offset.y + Block.MaximumSquareSize + 1 + 1);
