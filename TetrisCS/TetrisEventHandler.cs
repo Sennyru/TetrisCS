@@ -2,8 +2,9 @@
 {
     public delegate void TetrisEventHandler(TetrisEventArgs? e);
 
-    public struct TetrisEventArgs
+    public struct TetrisEventArgs : EventArgs
     {
-        public int? lineClearCount, b2bCombo;
+        public int? lineClearCount { get; set; }
+        public int? b2bCombo { get; set; }
     }
 }
