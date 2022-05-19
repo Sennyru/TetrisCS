@@ -51,8 +51,8 @@ class Program
     static void LineClearEnque(TetrisEventArgs? e)
     {
         eventQueue |= EventQueue.LineClear;
-        lineClearCount = e?.lineClearCount ?? 0;
-        b2bCombo = e?.b2bCombo ?? 0;
+        lineClearCount = e?.LineClearCount ?? 0;
+        b2bCombo = e?.B2bCombo ?? 0;
     }
 
     /// <summary> TetrisEventHandler </summary>
@@ -93,7 +93,7 @@ class Program
     }
 
     /// <summary> 라인 수에 따라 Tetris 등의 텍스트를 옆에 띄운다. </summary>
-    static void ShowLineClearText()
+    async static Task ShowLineClearText()
     {
         if (eventQueue.HasFlag(EventQueue.LineClear))
         {
@@ -112,7 +112,7 @@ class Program
                 Console.Write($"{b2bCombo} Combo");
             }
 
-            Task.Delay(500);
+            await Task.Delay(500);
             Console.SetCursorPosition(offset.x - 8, offset.y + Block.MaximumSquareSize + 1);
             Console.Write("      ");
             Console.SetCursorPosition(offset.x - 8, offset.y + Block.MaximumSquareSize + 1 + 1);

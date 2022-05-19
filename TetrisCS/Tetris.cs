@@ -31,6 +31,7 @@ namespace TetrisCS
 
         bool playing;
         
+        event TetrisEventHandler? MapUpdateEvent, LineClearEvent, HoldEvent, PlaceEvent;
 
         public int[,] Map => map;
         public bool Playing => playing;
@@ -40,7 +41,10 @@ namespace TetrisCS
         public List<BlockType> Bag => bag;
         public int BagSize { get => bagSize; set => bagSize = value; }
 
-        public event TetrisEventHandler? MapUpdateEvent, LineClearEvent, HoldEvent, PlaceEvent;
+        public event TetrisEventHandler? OnMapUpdated { add => MapUpdateEvent += value; remove => MapUpdateEvent -= value; }
+        public event TetrisEventHandler? OnLineCleared { add => LineClearEvent += value; remove => LineClearEvent -= value; }
+        public event TetrisEventHandler? OnHolded { add => HoldEvent += value; remove => HoldEvent -= value; }
+        public event TetrisEventHandler? OnPlaced { add => PlaceEvent += value; remove => PlaceEvent -= value; }
 
 
         /// <summary> 테트리스를 시작한다. </summary>
@@ -298,7 +302,7 @@ namespace TetrisCS
             MapUpdateEvent?.Invoke(null);
             PlaceEvent?.Invoke(null);
             if (lineClearCount > 0)
-                LineClearEvent?.Invoke(new TetrisEventArgs { lineClearCount = lineClearCount, b2bCombo = b2bCombo });
+                LineClearEvent?.Invoke(new TetrisEventArgs { LineClearCount = lineClearCount, B2bCombo = b2bCombo });
         }
 
         /// <summary> 홀드 전환 </summary>
