@@ -187,7 +187,7 @@ namespace Program
         /// <summary> 게임이 끝났을 때 실행된다. </summary>
         static void GameOver()
         {
-
+            
         }
         #endregion
 
@@ -226,6 +226,9 @@ namespace Program
                         break;
                     case ConsoleKey.C:
                         tetris.Hold();
+                        break;
+                    case ConsoleKey.Escape:
+                        Environment.Exit(0);
                         break;
                 }
             }
