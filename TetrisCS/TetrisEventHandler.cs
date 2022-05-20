@@ -1,6 +1,6 @@
 ﻿namespace TetrisCS
 {
-    public delegate void TetrisEventHandler(TetrisEventArgs? e);
+    public delegate void TetrisEventHandler(TetrisEventArgs? e = null);
 
     public class TetrisEventArgs : EventArgs
     {

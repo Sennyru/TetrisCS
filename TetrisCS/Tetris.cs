@@ -99,8 +99,8 @@
 
             playing = true;
 
-            MapUpdateEvent?.Invoke(null);
-            PlaceEvent?.Invoke(null);
+            MapUpdateEvent?.Invoke();
+            PlaceEvent?.Invoke();
         }
         #endregion
 
@@ -141,7 +141,7 @@
             gravityTimer.Stop();
             gravityTimer.Start();
 
-            MapUpdateEvent?.Invoke(null);
+            MapUpdateEvent?.Invoke();
 
             return block;
         }
@@ -223,7 +223,7 @@
                 currentBlock.pos += dir;
                 InsertBlockOnMap(currentBlock);
 
-                if (!hardDrop) MapUpdateEvent?.Invoke(null);
+                if (!hardDrop) MapUpdateEvent?.Invoke();
 
                 return true;
             }
@@ -232,7 +232,7 @@
             else if (dir == Vector.Down)
             {
                 Place();
-                if (hardDrop) MapUpdateEvent?.Invoke(null);
+                if (hardDrop) MapUpdateEvent?.Invoke();
             }
 
             return false;
@@ -254,7 +254,7 @@
                 currentBlock.Shape = rotated;
                 InsertBlockOnMap(currentBlock);
 
-                MapUpdateEvent?.Invoke(null);
+                MapUpdateEvent?.Invoke();
             }
         }
 
@@ -310,8 +310,8 @@
                 currentBlock = MakeNewBlock(GetNextBlock());
             }
 
-            MapUpdateEvent?.Invoke(null);
-            PlaceEvent?.Invoke(null);
+            MapUpdateEvent?.Invoke();
+            PlaceEvent?.Invoke();
             if (lineClearCount > 0)
                 LineClearEvent?.Invoke(new TetrisEventArgs { LineClearCount = lineClearCount, B2bCombo = b2bCombo });
         }
@@ -327,8 +327,8 @@
 
             currentBlock = MakeNewBlock(temp == BlockType.None ? GetNextBlock() : temp);
 
-            HoldEvent?.Invoke(null);
-            MapUpdateEvent?.Invoke(null);
+            HoldEvent?.Invoke();
+            MapUpdateEvent?.Invoke();
         }
 
         /// <summary> 게임이 끝났을 때 호출 </summary>
