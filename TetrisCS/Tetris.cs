@@ -355,7 +355,15 @@
 
                 NextLine: { }
             }
-            b2bCombo = lineClearCount >= 4 ? b2bCombo + 1 : 0;
+
+            b2bCombo = lineClearCount switch
+            {
+                0 => b2bCombo,
+                >= 4 => b2bCombo + 1,
+                _ => 0
+            };
+
+            Debug(b2bCombo.ToString());
 
             // 게임 오버 판정 (라인 클리어를 못 했고 마지막 블록 위치가 맨 위라면)
             if (lineClearCount == 0 && currentBlock.pos.y == 0)
@@ -394,6 +402,13 @@
         {
             playing = false;
             gravityTimer.Close();
+        }
+
+        /// <summary> 디버그 이벤트를 발생시킨다. </summary>
+        /// <param name="log"> 디버그 메세지 </param>
+        void Debug(string log)
+        {
+            DebugEvent?.Invoke(new TetrisEventArgs { DebugMessage = log });
         }
         #endregion
 
