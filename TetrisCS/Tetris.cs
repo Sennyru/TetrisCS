@@ -165,7 +165,7 @@
                 {
                     if (block[y, x] == 1)
                     {
-                        map[block.pos.y + y, block.pos.x + x] = 1;
+                        map[block.pos.y + y, block.pos.x + x] = (int)block.Type;
                         positionOfCurrentBlock[block.pos.y + y, block.pos.x + x] = true;
                     }
                 }
@@ -241,7 +241,7 @@
                         }
 
                         // 놓을 칸에 공간이 없고(1) 자기 칸이 아니라면 옮길 수 없다
-                        if (map[nY, nX] == 1 && positionOfCurrentBlock[nY, nX] != true)
+                        if (map[nY, nX] != 0 && positionOfCurrentBlock[nY, nX] != true)
                         {
                             return false;
                         }
@@ -357,7 +357,7 @@
             }
             b2bCombo = lineClearCount >= 4 ? b2bCombo + 1 : 0;
 
-            // 게임 오버 판정
+            // 게임 오버 판정 (라인 클리어를 못 했고 마지막 블록 위치가 맨 위라면)
             if (lineClearCount == 0 && currentBlock.pos.y == 0)
             {
                 GameOver();

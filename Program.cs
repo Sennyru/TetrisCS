@@ -100,15 +100,26 @@ namespace Program
                     {
                         if (tetris.PositionOfCurrentBlock[i, j] == true)
                         {
+                            Console.ForegroundColor = tetris.CurrentBlock.Type.ToBlockColor();
                             Console.Write("▣");
                         }
                         else if (tetris.Ghost[i, j] == true)
                         {
+                            Console.ForegroundColor = ConsoleColor.DarkGray;
                             Console.Write("▩");
                         }
                         else
                         {
-                            Console.Write(tetris.Map[i, j] >= 1 ? "■" : "□");
+                            if (tetris.Map[i, j] >= 1)
+                            {
+                                Console.ForegroundColor = ((BlockType)tetris.Map[i, j]).ToBlockColor();
+                                Console.Write("■");
+                            }
+                            else 
+                            {
+                                Console.ForegroundColor = ConsoleColor.DarkGray;
+                                Console.Write("□");
+                            }
                         }
                     }
                 }
@@ -125,6 +136,7 @@ namespace Program
                 eventFlag &= ~EventFlag.RemoveLineClear;
 
                 Console.SetCursorPosition(offset.x - 8, offset.y + Block.MaximumSquareSize + 1);
+                Console.ForegroundColor = ConsoleColor.White;
                 Console.Write(lineClearCount switch
                 {
                     1 => "Single",
@@ -166,6 +178,7 @@ namespace Program
                         Console.SetCursorPosition(offset.x - (Block.MaximumSquareSize * 2 + 2), offset.y + 1 + y);
                         for (int x = 0; x < Block.MaximumSquareSize; x++)
                         {
+                            Console.ForegroundColor = tetris.HoldingBlock.ToBlockColor();
                             Console.Write((y < holding.GetLength(0) && x < holding.GetLength(1) && holding[y, x] == 1) ? "■" : "　");
                         }
                     }
@@ -189,6 +202,7 @@ namespace Program
                         Console.SetCursorPosition(offset.x + tetris.Width * 2 + 2, offset.y + yOffset * Block.MaximumSquareSize + 2 + y);
                         for (int x = 0; x < Block.MaximumSquareSize; x++)
                         {
+                            Console.ForegroundColor = type.ToBlockColor();
                             Console.Write((y < block.GetLength(0) && x < block.GetLength(1) && block[y, x] == 1) ? "■" : "　");
                         }
                     }
@@ -204,6 +218,7 @@ namespace Program
             if (eventFlag.HasFlag(EventFlag.Debug))
             {
                 Console.SetCursorPosition(0, debugCount++ % 30);
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
                 Console.Write($"[{debugCount}] {debugMessage ?? string.Empty}");
 
                 eventFlag &= ~EventFlag.Debug;
@@ -214,8 +229,9 @@ namespace Program
         /// <summary> 게임이 끝났을 때 실행된다. </summary>
         static void GameOver()
         {
-            string text = "GameOver";
-            Console.SetCursorPosition(offset.x + tetris.Width - text.Length / 2, offset.y + tetris.Height / 2);
+            string text = "ＧＡＭＥＯＶＥＲ";
+            Console.SetCursorPosition(offset.x + tetris.Width - text.Length, offset.y + tetris.Height / 2);
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine(text);
             ExitGame();
         }
@@ -224,6 +240,7 @@ namespace Program
         static void ExitGame()
         {
             Console.SetCursorPosition(0, offset.y + tetris.Height + 1);
+            Console.ForegroundColor = ConsoleColor.Gray;
             Environment.Exit(0);
         }
         #endregion
