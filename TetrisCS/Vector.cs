@@ -13,6 +13,8 @@
         public static Vector Left => new(-1, 0);
         /// <summary> new Vector(0, 1) <br/> 좌표계가 다르므로 유의. </summary>
         public static Vector Down => new(0, 1);
+        /// <summary> new Vector(0, 0) </summary>
+        public static Vector Zero => new(0, 0);
 
         public static Vector operator +(Vector a, Vector b) => new Vector(a.x + b.x, a.y + b.y);
         public static Vector operator -(Vector a, Vector b) => new Vector(a.x - b.x, a.y - b.y);
