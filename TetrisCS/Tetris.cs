@@ -317,6 +317,8 @@
         /// <summary> 블록이 땅에 안착했을 때 실행된다. 다음 블록을 생성한다. </summary>
         void Place()
         {
+            if (lockTimer.Enabled) lockTimer.Stop();
+
             // positionOfCurrentBlock 초기화
             for (int y = 0; y < currentBlock.Height; y++)
             {
