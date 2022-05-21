@@ -107,7 +107,6 @@
         public void Play()
         {
             gravityTimer.Start();
-            //CreateGhost();
             playing = true;
 
             MapUpdateEvent?.Invoke();
@@ -187,8 +186,6 @@
                     ghostPos += Vector.Down;
                 else break;
             }
-
-            DebugEvent?.Invoke(new TetrisEventArgs { DebugMessage = ghostPos.ToString() });
 
             if (inplace)
             {
@@ -290,9 +287,6 @@
             else
             {
                 Vector ghostPos = CreateGhost(currentBlock);
-
-                //DebugEvent?.Invoke(new TetrisEventArgs { DebugMessage = down.ToString() });
-
                 RemoveBlockOnMap(currentBlock);
                 currentBlock.pos = ghostPos;
                 InsertBlockOnMap(currentBlock);
@@ -364,7 +358,7 @@
             // 게임 오버 판정
             if (lineClearCount == 0 && currentBlock.pos.y == 0)
             {
-                //GameOver();
+                GameOver();
             }
             else
             {
