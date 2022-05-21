@@ -15,6 +15,7 @@ namespace Program
         Hold            = 1 << 2,
         Place           = 1 << 3,
         RemoveLineClear = 1 << 4,
+        Debug           = 1 << 5,
     }
 
     static class Program
@@ -25,6 +26,8 @@ namespace Program
         static EventFlag eventFlag;
         static int lineClearCount;
         static int b2bCombo;
+        static string? debugMessage;
+        static int debugCount;
 
 
         static void Main()
@@ -35,6 +38,7 @@ namespace Program
             tetris.OnLineCleared += LineClearEnque;
             tetris.OnHolded += HoldEnque;
             tetris.OnPlaced += PlaceEnque;
+            tetris.OnDebugMessageSent += DebugEnque;
             tetris.Play();
 
             Thread inputThread = new(InputThread);
@@ -46,6 +50,7 @@ namespace Program
                 ShowLineClearText();
                 ShowHoldingBlock();
                 ShowNextBlocks();
+                ShowDebugMessage();
             }
             GameOver();
         }
@@ -73,6 +78,12 @@ namespace Program
         {
             eventFlag |= EventFlag.Place;
         }
+
+        static void DebugEnque(TetrisEventArgs? e)
+        {
+            debugMessage = e?.DebugMessage ?? string.Empty;
+            eventFlag |= EventFlag.Debug;
+        }
         #endregion
 
 
@@ -90,6 +101,10 @@ namespace Program
                         if (tetris.PositionOfCurrentBlock[i, j] == true)
                         {
                             Console.Write("▣");
+                        }
+                        else if (tetris.Ghost[i, j] == true)
+                        {
+                            Console.Write("▩");
                         }
                         else
                         {
@@ -183,11 +198,33 @@ namespace Program
                 eventFlag &= ~EventFlag.Place;
             }
         }
+        
+        static void ShowDebugMessage()
+        {
+            if (eventFlag.HasFlag(EventFlag.Debug))
+            {
+                Console.SetCursorPosition(0, debugCount++ % 30);
+                Console.Write($"[{debugCount}] {debugMessage ?? string.Empty}");
+
+                eventFlag &= ~EventFlag.Debug;
+            }
+        }
+
 
         /// <summary> 게임이 끝났을 때 실행된다. </summary>
         static void GameOver()
         {
-            
+            string text = "GameOver";
+            Console.SetCursorPosition(offset.x + tetris.Width - text.Length / 2, offset.y + tetris.Height / 2);
+            Console.WriteLine(text);
+            ExitGame();
+        }
+
+        /// <summary> 게임과 콘솔을 종료한다. </summary>
+        static void ExitGame()
+        {
+            Console.SetCursorPosition(0, offset.y + tetris.Height + 1);
+            Environment.Exit(0);
         }
         #endregion
 
@@ -228,7 +265,7 @@ namespace Program
                         tetris.Hold();
                         break;
                     case ConsoleKey.Escape:
-                        Environment.Exit(0);
+                        ExitGame();
                         break;
                 }
             }

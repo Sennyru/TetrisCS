@@ -10,6 +10,7 @@
         
         readonly int[,] map;
         readonly bool[,] positionOfCurrentBlock;
+        bool[,] ghost;
         readonly Queue<BlockType> nextBlockQueue;
         bool playing;
         Block currentBlock;
@@ -18,10 +19,11 @@
         int b2bCombo;
 
         readonly System.Timers.Timer gravityTimer = new();
+        readonly System.Timers.Timer lockTimer = new();
         readonly Random random = new();
         readonly Queue<BlockType> bagBuffer = new();
         
-        event TetrisEventHandler? MapUpdateEvent, LineClearEvent, HoldEvent, PlaceEvent;
+        event TetrisEventHandler? MapUpdateEvent, LineClearEvent, HoldEvent, PlaceEvent, DebugEvent;
         #endregion
 
 
@@ -34,8 +36,10 @@
         public int NextQueueSize => nextQueueSize;
         /// <summary> 현재 테트리스 맵 </summary>
         public int[,] Map => map;
-        /// <summary> 현재 조작하고 있는 블록의 위치 (0 또는 1) </summary>
+        /// <summary> 현재 조작하고 있는 블록의 위치 </summary>
         public bool[,] PositionOfCurrentBlock => positionOfCurrentBlock;
+        /// <summary> 고스트 위치 </summary>
+        public bool[,] Ghost => ghost;
         /// <summary> 다음에 나올 블록 큐 </summary>
         public Queue<BlockType> NextBlockQueue => nextBlockQueue;
         /// <summary> 현재 게임이 플레이 중인가? </summary>
@@ -57,16 +61,23 @@
         public event TetrisEventHandler OnHolded { add => HoldEvent += value; remove => HoldEvent -= value; }
         /// <summary> 블록이 바닥에 안착했을 때 발동되는 이벤트 </summary>
         public event TetrisEventHandler OnPlaced { add => PlaceEvent += value; remove => PlaceEvent -= value; }
+        /// <summary> 디버그 메세지가 왔을 때 발동되는 이벤트 </summary>
+        public event TetrisEventHandler OnDebugMessageSent { add => DebugEvent += value; remove => DebugEvent -= value; }
         #endregion
 
 
-        #region Constructor & Entry Point
         public Tetris(int width = 10, int height = 20, int nextQueueSize = 4, float initialGravity = 500, BlockType[]? availableBlockTypes = null)
         {
+            #region Arguments Checking
             if (width < 1)
-                throw new ArgumentException("width는 최소 1 이상이어야 합니다.", nameof(width));
+                throw new ArgumentException("가로 길이는 최소 1 이상이어야 합니다.", nameof(width));
             if (height < 1)
-                throw new ArgumentException("height는 최소 1 이상이어야 합니다.", nameof(height));
+                throw new ArgumentException("세로 길이는 최소 1 이상이어야 합니다.", nameof(height));
+            if (nextQueueSize < 0)
+                throw new ArgumentException("다음 블록의 개수는 음수가 될 수 없습니다.", nameof(nextQueueSize));
+            if (initialGravity < 0)
+                throw new ArgumentException("중력은 음수가 될 수 없습니다.", nameof(initialGravity));
+            #endregion
 
             this.width = width;
             this.height = height;
@@ -78,6 +89,7 @@
 
             map = new int[height, width];
             positionOfCurrentBlock = new bool[height, width];
+            ghost = new bool[height, width];
             nextBlockQueue = new();
 
             for (int i = 0; i < nextQueueSize; i++)
@@ -85,10 +97,9 @@
             currentBlock = MakeNewBlock(GetNextBlock());
 
             gravityTimer.Interval = gravity;
-            gravityTimer.Elapsed += (sender, e) => 
-            { 
-                MoveBlockTo(Vector.Down);
-            };
+            gravityTimer.Elapsed += (sender, e) => MoveBlockTo(Vector.Down);
+            lockTimer.Interval = 500;
+            lockTimer.Elapsed += (sender, e) => Place();
         }
 
 
@@ -96,13 +107,12 @@
         public void Play()
         {
             gravityTimer.Start();
-
+            //CreateGhost();
             playing = true;
 
             MapUpdateEvent?.Invoke();
             PlaceEvent?.Invoke();
         }
-        #endregion
 
 
         #region Private Functions
@@ -161,6 +171,41 @@
                     }
                 }
             }
+
+            CreateGhost(block);
+        }
+
+        /// <summary> 고스트의 위치를 계산한다. </summary>
+        /// <param name="block"> 계산할 블록 </param>
+        /// <param name="inplace"> ghost 배열에 계산한 고스트를 넣는지 여부. 단순히 고스트 위치만 알아낼 거면 <b>false</b>. </param>
+        Vector CreateGhost(Block block, bool inplace = true)
+        {
+            Vector ghostPos = block.pos;
+            while (true)
+            {
+                if (CanMove(block.Shape, ghostPos + Vector.Down))
+                    ghostPos += Vector.Down;
+                else break;
+            }
+
+            DebugEvent?.Invoke(new TetrisEventArgs { DebugMessage = ghostPos.ToString() });
+
+            if (inplace)
+            {
+                ghost = new bool[height, width];
+                for (int y = 0; y < block.Height; y++)
+                {
+                    for (int x = 0; x < block.Width; x++)
+                    {
+                        if (block[y, x] == 1)
+                        {
+                            ghost[ghostPos.y + y, ghostPos.x + x] = true;
+                        }
+                    }
+                }
+            }
+
+            return ghostPos;
         }
 
         /// <summary> map에서 블록을 제거한다. ( + positionOfCurrentBlock) </summary>
@@ -213,29 +258,46 @@
         /// <summary> 블록을 pos만큼 옮긴다. </summary>
         /// <param name="dir"> 옮기는 방향 (Right / Left / Down) </param>
         /// <param name="hardDrop"> 하드 드롭 여부 </param>
-        /// <returns> 옮길 수 없어서 다음 블록이 생겼다면 false를 리턴한다. 그 외에는 true를 리턴한다. </returns>
-        bool MoveBlockTo(Vector dir, bool hardDrop = false)
+        void MoveBlockTo(Vector dir, bool hardDrop = false)
         {
-            // 옮길 수 있는 경우
-            if (CanMove(currentBlock.Shape, currentBlock.pos + dir))
+            if (hardDrop == false)
             {
-                RemoveBlockOnMap(currentBlock);
-                currentBlock.pos += dir;
-                InsertBlockOnMap(currentBlock);
+                // 옮길 수 있는 경우
+                if (CanMove(currentBlock.Shape, currentBlock.pos + dir))
+                {
+                    RemoveBlockOnMap(currentBlock);
+                    currentBlock.pos += dir;
+                    InsertBlockOnMap(currentBlock);
 
-                if (!hardDrop) MapUpdateEvent?.Invoke();
+                    MapUpdateEvent?.Invoke();
+                }
 
-                return true;
+                // 아래로 움직일 수 없다면(바닥에 닿았다면)
+                if (!CanMove(currentBlock.Shape, currentBlock.pos + Vector.Down))
+                {
+                    gravityTimer.Stop();
+                    lockTimer.Start();
+                }
+                // 다시 아래로 움직일 수 있게 된다면
+                else
+                {
+                    if (!gravityTimer.Enabled) gravityTimer.Start();
+                    if (lockTimer.Enabled) lockTimer.Stop();
+                }
             }
             
-            // 옮길 수 없는 경우 기본적으로 무시되나, 아래쪽으로 이동할 수 없는 경우는 블록이 땅에 닿았다는 뜻
-            else if (dir == Vector.Down)
+            // 하드 드롭
+            else
             {
-                Place();
-                if (hardDrop) MapUpdateEvent?.Invoke();
-            }
+                Vector ghostPos = CreateGhost(currentBlock);
 
-            return false;
+                //DebugEvent?.Invoke(new TetrisEventArgs { DebugMessage = down.ToString() });
+
+                RemoveBlockOnMap(currentBlock);
+                currentBlock.pos = ghostPos;
+                InsertBlockOnMap(currentBlock);
+                Place();
+            }
         }
 
         /// <summary> 현재 블록이 회전 가능한지 체크하고, 가능하다면 회전시킨다. </summary>
@@ -302,7 +364,7 @@
             // 게임 오버 판정
             if (lineClearCount == 0 && currentBlock.pos.y == 0)
             {
-                GameOver();
+                //GameOver();
             }
             else
             {
@@ -362,7 +424,7 @@
         /// <summary> 블록을 바닥에 한 번에 떨어뜨리기 </summary>
         public void HardDrop()
         {
-            while (MoveBlockTo(Vector.Down, hardDrop: true));
+            MoveBlockTo(Vector.Down, hardDrop: true);
         }
 
         /// <summary> 블록을 오른쪽으로 90도 회전시키기 </summary>
