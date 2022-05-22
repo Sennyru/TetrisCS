@@ -7,6 +7,7 @@
         public Vector pos;
         readonly BlockType type;
         int[,] shape;
+        RotationType rotationState;
 
 
         public Block(Vector pos, BlockType type, int[,]? shape = null)
@@ -88,6 +89,12 @@
         public int Width => shape.GetLength(1);
         /// <summary> 블록(Shape)의 세로 길이 </summary>
         public int Height => shape.GetLength(0);
+        /// <summary> 현재 블록의 회전 상태 </summary>
+        public RotationType RotationState
+        {
+            get => rotationState;
+            set => rotationState = (RotationType)((int)value % 4);
+        }
 
 
         /// <summary> 자신을 오른쪽 또는 왼쪽으로 회전시킨 조각을 리턴한다. </summary>
@@ -111,9 +118,12 @@
             }
             return rotatedArr;
         }
-        
+
         /// <summary> 자신 객체를 복사해서 새로 리턴한다. </summary>
-        public Block Copy() => new Block(pos, type, shape);
+        public Block Copy()
+        {
+            return new Block(pos, type, shape);
+        }
 
         public int this[int y, int x] => shape[y, x];
     }
