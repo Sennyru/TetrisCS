@@ -412,4 +412,7 @@ public partial class Tetris
         DebugEvent?.Invoke(new TetrisEventArgs { DebugMessage = log });
     }
     #endregion
+
+
+    static void Main() { }
 }
