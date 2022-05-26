@@ -308,7 +308,6 @@ public partial class Tetris
             RemoveBlockOnMap(currentBlock);
             currentBlock.Shape = rotated;
             currentBlock.RotationState += isClockwise switch { true => 1, false => -1, null => 2 };
-            Debug(currentBlock.RotationState.ToString());
             InsertBlockOnMap(currentBlock);
 
             MapUpdateEvent?.Invoke();
@@ -363,8 +362,6 @@ public partial class Tetris
             >= 4 => b2bCombo + 1,
             _ => 0
         };
-
-        Debug(b2bCombo.ToString());
 
         // 게임 오버 판정 (라인 클리어를 못 했고 마지막 블록 위치가 맨 위라면)
         if (lineClearCount == 0 && currentBlock.pos.y == 0)
